@@ -1,8 +1,10 @@
 
-
-### newrelic-clj
-
+<img src="./docs/logo.png" title="newrelic-clj" width="300" height="300" align="left" padding="5px"/>
+<small>
+<br/><br/><br/><br/>
 A library to simplify usage of the Newrelic APM Java API from Clojure programs.
+</small>
+<br clear="all" /><br />
 
 ---
 
