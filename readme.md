@@ -31,7 +31,7 @@ use the route "template" as the name of the transaction instead of the literal u
 
 Optionally use the `wrap-rum-injection` middleware to add script tags to all html page responses. Injection is performed
 by [injecting-streams](https://github.com/RutledgePaulV/injecting-streams) and takes place as bytes are written to the
-response stream. The performance overhead is extremely low (~400ns).
+response stream. The performance overhead is very low (< 10μs).
 
 ```clojure
 
