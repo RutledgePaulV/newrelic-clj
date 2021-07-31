@@ -6,25 +6,25 @@
 
 
 (deftype DispatchThunk [callback]
-  Runnable
-  (^{Trace {:dispatcher true}} run [_] (callback)))
+  Callable
+  (^{Trace {:dispatcher true}} call [_] (callback)))
 
 (deftype AsyncThunk [callback]
-  Runnable
-  (^{Trace {:async true}} run [_] (callback)))
+  Callable
+  (^{Trace {:async true}} call [_] (callback)))
 
 (deftype TraceThunk [callback]
-  Runnable
-  (^{Trace {}} run [_] (callback)))
+  Callable
+  (^{Trace {}} call [_] (callback)))
 
 (defn transaction* [f]
-  (.run (->DispatchThunk f)))
+  (.call (->DispatchThunk f)))
 
 (defn async-transaction* [f]
-  (.run (->AsyncThunk f)))
+  (.call (->AsyncThunk f)))
 
 (defn trace* [f]
-  (.run (->TraceThunk f)))
+  (.call (->TraceThunk f)))
 
 (defmacro transaction [& body]
   `(transaction* (^{:once true} fn* [] ~@body)))
@@ -100,11 +100,11 @@
   (fn wrap-transaction-naming-handler
     ([request]
      (let [name (internals/extract-path-template request)]
-       (set-transaction-name name)
+       (set-transaction-name "Uri" name)
        (handler request)))
     ([request respond raise]
      (let [name (internals/extract-path-template request)]
-       (set-transaction-name name)
+       (set-transaction-name "Uri" name)
        (handler request respond raise)))))
 
 

@@ -7,14 +7,14 @@
   (byte-length [x]))
 
 (extend-protocol ContentLength
+  (Class/forName "[B")
+  (byte-length [x] (alength x))
   nil
   (byte-length [x] 0)
   Object
   (byte-length [x] -1)
   String
-  (byte-length [x] (alength (.getBytes x)))
-  (class (byte-array 0))
-  (byte-length [x] (alength x)))
+  (byte-length [x] (alength (.getBytes x))))
 
 (def status-code-mapping
   {100 "Continue"

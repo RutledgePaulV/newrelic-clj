@@ -43,9 +43,6 @@
     :otherwise
     (throw (ex-info (str "Don't know how to deflate from " (class body)) {:body body}))))
 
-(defn gzip [^OutputStream output-stream]
-  (GZIPOutputStream. output-stream))
-
 (defn inject-output-stream [^OutputStream output-stream ^String header ^String footer]
   (cond-> output-stream
     (not (strings/blank? header))
@@ -84,8 +81,7 @@
                         zipped-stream   (GZIPOutputStream. injected-stream)]
               (protos/write-body-to-stream (gunzip body) response zipped-stream))))]
     (-> response
-        (update :headers dissoc "Content-Length")
-        (update :headers dissoc "content-length")
+        (update :headers dissoc "Content-Length" "content-length")
         (update :headers assoc "Content-Encoding" "gzip")
         (assoc :body injected-body))))
 
@@ -97,8 +93,7 @@
                         zipped-stream   (DeflaterOutputStream. injected-stream)]
               (protos/write-body-to-stream (deflate body) response zipped-stream))))]
     (-> response
-        (update :headers dissoc "Content-Length")
-        (update :headers dissoc "content-length")
+        (update :headers dissoc "Content-Length" "content-length")
         (update :headers assoc "Content-Encoding" "deflate")
         (assoc :body injected-body))))
 

@@ -3,10 +3,15 @@
   com.newrelic.agent.java/newrelic-api       {:mvn/version "7.1.1"}
   ring/ring-core                             {:mvn/version "1.9.4"}}
 
+ :paths
+ ["src"]
+
  :aliases
  {:test {:extra-paths ["test"]
+         :jvm-opts    ["-javaagent:./newrelic/newrelic.jar"]
          :extra-deps  {io.github.cognitect-labs/test-runner
                        {:git/url "https://github.com/cognitect-labs/test-runner.git"
-                        :sha     "4e7e1c0dfd5291fa2134df052443dc29695d8cbe"}}
+                        :sha     "4e7e1c0dfd5291fa2134df052443dc29695d8cbe"}
+                       ring/ring-jetty-adapter {:mvn/version "1.9.2"}}
          :main-opts   ["-m" "cognitect.test-runner"]
          :exec-fn     cognitect.test-runner.api/test}}}
