@@ -174,7 +174,7 @@
     (let [original (MDC/getCopyOfContextMap)]
       (try
         (MDC/setContextMap
-          (doto (MDC/getCopyOfContextMap)
+          (doto (or (MDC/getCopyOfContextMap) (HashMap.))
             (.putAll (walk/stringify-keys context))))
         (apply f args)
         (finally
