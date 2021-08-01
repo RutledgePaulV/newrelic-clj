@@ -71,7 +71,7 @@
 (defn get-linking-context
   "Returns a map of data necessary to include in logs"
   []
-  (.getLinkingMetadata (NewRelic/getAgent)))
+  (or (.getLinkingMetadata (NewRelic/getAgent)) {}))
 
 (defn set-trace-name
   "Set a category and name for the current trace."
@@ -168,7 +168,7 @@
    a mdc context containing the data from the context map."
   [f context]
   (fn [& args]
-    (let [original (MDC/getCopyOfContextMap)]
+    (let [original (or (MDC/getCopyOfContextMap) {})]
       (try
         (MDC/setContextMap (merge context original))
         (apply f args)
