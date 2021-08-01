@@ -4,10 +4,9 @@
             [newrelic-clj.types :as types]
             [clojure.string :as strings]
             [clojure.walk :as walk])
-  (:import (com.newrelic.api.agent NewRelic Transaction TransactionNamePriority TracedMethod Token TraceMetadata)
+  (:import (com.newrelic.api.agent NewRelic Transaction TransactionNamePriority TracedMethod Token)
            (org.slf4j MDC)
-           (java.util HashMap TreeMap Map)
-           (java.util.concurrent ConcurrentHashMap)))
+           (java.util HashMap Map)))
 
 
 (defn get-transaction
@@ -98,6 +97,47 @@
   (^Token [^Transaction transaction]
    (.getToken transaction)))
 
+(defn notice-error
+  "Reports an error to newrelic against the current transaction."
+  ([error]
+   (cond
+     (instance? Throwable error)
+     (NewRelic/noticeError ^Throwable error)
+     (string? error)
+     (NewRelic/noticeError ^String error)
+     :otherwise
+     (throw (IllegalArgumentException. "Not a type that can be reported to newrelic as an error."))))
+  ([error data]
+   (cond
+     (instance? Throwable error)
+     (NewRelic/noticeError ^Throwable error ^Map (walk/stringify-keys data))
+     (string? error)
+     (NewRelic/noticeError ^String error ^Map (walk/stringify-keys data))
+     :otherwise
+     (throw (IllegalArgumentException. "Not a type that can be reported to newrelic as an error.")))))
+
+
+(defn mdc-context-fn
+  "Returns an instrumented version of f which will first establish
+   a mdc context containing the data from the context map."
+  [f context]
+  (if (not-empty context)
+    (fn [& args]
+      (let [original (MDC/getCopyOfContextMap)]
+        (try
+          (MDC/setContextMap
+            (doto (or (MDC/getCopyOfContextMap) (HashMap.))
+              (.putAll (walk/stringify-keys context))))
+          (apply f args)
+          (finally
+            (MDC/setContextMap (or original (HashMap.)))))))
+    f))
+
+(defmacro with-mdc-linking
+  "Sets up a mdc context containing the attributes necessary for 'logs in context' before executing body."
+  [& body]
+  `((mdc-context-fn (^{:once true} fn* [] ~@body) (get-linking-context))))
+
 (defn transaction-fn
   "Instrument a function to produce a new function that will report to newrelic
    as a transaction if there is no parent transaction and as a child trace if
@@ -106,9 +146,10 @@
    (types/->TransactionFn
      (fn [& args]
        (try
-         (apply f args)
+         (with-mdc-linking
+           (apply f args))
          (catch Exception e
-           (NewRelic/noticeError ^Throwable e)
+           (notice-error e)
            (throw e))))))
   ([f category name]
    (fn [& args]
@@ -120,9 +161,10 @@
                (if-not nested
                  (set-transaction-name category name)
                  (set-trace-name category name))
-               (apply f args)
+               (with-mdc-linking
+                 (apply f args))
                (catch Exception e
-                 (NewRelic/noticeError ^Throwable e)
+                 (notice-error e)
                  (throw e)))))
          args)))))
 
@@ -134,9 +176,10 @@
    (types/->AsyncTransactionFn
      (fn [& args]
        (try
-         (apply f args)
+         (with-mdc-linking
+           (apply f args))
          (catch Exception e
-           (NewRelic/noticeError ^Throwable e)
+           (notice-error e)
            (throw e))))))
   ([f category name]
    (fn [& args]
@@ -148,9 +191,10 @@
                (if-not nested
                  (set-transaction-name category name)
                  (set-trace-name category name))
-               (apply f args)
+               (with-mdc-linking
+                 (apply f args))
                (catch Exception e
-                 (NewRelic/noticeError ^Throwable e)
+                 (notice-error e)
                  (throw e)))))
          args)))))
 
@@ -166,25 +210,6 @@
   [& body]
   `((async-transaction-fn (^{:once true} fn* [] ~@body))))
 
-(defn mdc-context-fn
-  "Returns an instrumented version of f which will first establish
-   a mdc context containing the data from the context map."
-  [f context]
-  (fn [& args]
-    (let [original (MDC/getCopyOfContextMap)]
-      (try
-        (MDC/setContextMap
-          (doto (or (MDC/getCopyOfContextMap) (HashMap.))
-            (.putAll (walk/stringify-keys context))))
-        (apply f args)
-        (finally
-          (MDC/setContextMap (or original (HashMap.))))))))
-
-(defmacro with-mdc-linking
-  "Sets up a mdc context containing the attributes necessary for 'logs in context' before executing body."
-  [& body]
-  `((mdc-context-fn (^{:once true} fn* [] ~@body) (get-linking-context))))
-
 (defmacro defn-traced
   "Like defn, but for defining functions that will report as newrelic transactions
    if there is no parent transaction, or as a trace if there already is a parent
@@ -199,29 +224,25 @@
   (fn wrap-transaction-handler
     ([request]
      (with-transaction
-       (with-mdc-linking
-         (.convertToWebTransaction (get-transaction))
-         (set-transaction-request request)
-         (doto (handler request)
-           (set-transaction-response)))))
+       (.convertToWebTransaction (get-transaction))
+       (set-transaction-request request)
+       (doto (handler request)
+         (set-transaction-response))))
     ([request respond raise]
      (with-transaction
-       (with-mdc-linking
-         (set-transaction-request request)
-         (let [token (get-async-token)]
-           (handler request
-                    (fn respond-callback [response]
-                      (with-async-transaction
-                        (.linkAndExpire token)
-                        (with-mdc-linking
-                          (set-transaction-response response)
-                          (respond response))))
-                    (fn raise-callback [^Throwable exception]
-                      (with-async-transaction
-                        (.linkAndExpire token)
-                        (with-mdc-linking
-                          (NewRelic/noticeError exception)
-                          (raise exception)))))))))))
+       (set-transaction-request request)
+       (let [token (get-async-token)]
+         (handler request
+                  (fn respond-callback [response]
+                    (with-async-transaction
+                      (.linkAndExpire token)
+                      (set-transaction-response response)
+                      (respond response)))
+                  (fn raise-callback [^Throwable exception]
+                    (with-async-transaction
+                      (.linkAndExpire token)
+                      (NewRelic/noticeError exception)
+                      (raise exception)))))))))
 
 
 (defn wrap-transaction-naming
