@@ -178,7 +178,7 @@
 (defmacro with-mdc-linking
   "Sets up a mdc context containing the attributes necessary for 'logs in context' before executing body."
   [& body]
-  `(mdc-context-fn (^{:once true} fn* [] ~@body) (get-linking-context)))
+  `((mdc-context-fn (^{:once true} fn* [] ~@body) (get-linking-context))))
 
 (defmacro defn-traced
   "Like defn, but for defining functions that will report as newrelic transactions
