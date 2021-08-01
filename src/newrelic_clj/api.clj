@@ -1,110 +1,212 @@
 (ns newrelic-clj.api
+  (:import (com.newrelic.api.agent NewRelic Transaction TransactionNamePriority TracedMethod Token))
   (:require [newrelic-clj.internals :as internals]
             [newrelic-clj.inject :as inject]
-            [clojure.string :as strings])
-  (:import (com.newrelic.api.agent NewRelic Trace Token)))
+            [newrelic-clj.types :as types]
+            [clojure.string :as strings]))
 
 
-(deftype DispatchThunk [callback]
-  Callable
-  (^{Trace {:dispatcher true}} call [_] (callback)))
+(defn get-transaction
+  "Get the current transaction."
+  []
+  (.getTransaction (NewRelic/getAgent)))
 
-(deftype AsyncThunk [callback]
-  Callable
-  (^{Trace {:async true}} call [_] (callback)))
+(defn in-transaction?
+  "Check if there's already an active transaction"
+  ([]
+   (in-transaction? (get-transaction)))
+  ([^Transaction transaction]
+   (not= "com.newrelic.agent.bridge.NoOpTransaction" (.getName (class transaction)))))
 
-(deftype TraceThunk [callback]
-  Callable
-  (^{Trace {}} call [_] (callback)))
+(defn set-transaction-request
+  "Set a ring request map as the web request for the current transaction."
+  ([request]
+   (set-transaction-request (get-transaction) request))
+  ([^Transaction transaction request]
+   (.setWebRequest transaction (internals/adapt-ring-request request))))
 
-(defn transaction* [f]
-  (.call (->DispatchThunk f)))
-
-(defn async-transaction* [f]
-  (.call (->AsyncThunk f)))
-
-(defn trace* [f]
-  (.call (->TraceThunk f)))
-
-(defmacro transaction [& body]
-  `(transaction* (^{:once true} fn* [] ~@body)))
-
-(defmacro async-transaction [& body]
-  `(async-transaction* (^{:once true} fn* [] ~@body)))
-
-(defmacro trace [& body]
-  `(trace* (^{:once true} fn* [] ~@body)))
+(defn set-transaction-response
+  "Set a ring request map as the web response for the current transaction."
+  ([response]
+   (set-transaction-response (get-transaction) response))
+  ([^Transaction transaction response]
+   (.setWebResponse transaction (internals/adapt-ring-response response))))
 
 (defn set-transaction-name
-  ([name]
-   (set-transaction-name nil name))
-  ([category name]
-   (NewRelic/setTransactionName category name)))
+  "Set a transaction category and name for the current transaction."
+  ([^String category ^String name]
+   (set-transaction-name (get-transaction) category name))
+  ([^Transaction transaction ^String category ^String name]
+   (.setTransactionName transaction TransactionNamePriority/CUSTOM_HIGH true category (into-array String [name]))))
 
-(defn set-parameters
-  ([params]
-   (set-parameters "" params))
+(defn omit-transaction
+  "Don't report the current transaction"
+  ([]
+   (omit-transaction (get-transaction)))
+  ([^Transaction transaction]
+   (.ignore transaction)))
+
+(defn omit-transaction-from-apdex
+  "Don't report the current transaction against the apdex"
+  ([]
+   (omit-transaction-from-apdex (get-transaction)))
+  ([^Transaction transaction]
+   (.ignoreApdex transaction)))
+
+(defn omit-transaction-errors
+  "Don't report errors on the current transaction"
+  ([]
+   (omit-transaction-errors (get-transaction)))
+  ([^Transaction transaction]
+   (.ignoreErrors transaction)))
+
+(defn get-trace
+  "Get the current trace."
+  ([]
+   (get-trace (get-transaction)))
+  ([^Transaction transaction]
+   (.getTracedMethod transaction)))
+
+(defn set-trace-name
+  "Set a category and name for the current trace."
+  ([^String category ^String name]
+   (set-trace-name (get-trace) category name))
+  ([^TracedMethod trace ^String category ^String name]
+   (.setMetricName trace (into-array String [category name]))))
+
+(defn set-trace-params
+  "Set parameters onto the current trace"
   ([prefix params]
-   (NewRelic/addCustomParameters (internals/prefix-keys prefix params))))
+   (set-trace-params (get-transaction) prefix params))
+  ([^TracedMethod trace prefix params]
+   (.addCustomAttributes trace (internals/prefix-keys prefix params))))
 
-(defn create-async-token ^Token []
-  (.getToken (.getTransaction (NewRelic/getAgent))))
+(defn get-async-token
+  "Get a token that can be used to connect traces back to a single transaction
+   even if the traces run on different threads."
+  (^Token []
+   (get-async-token (get-transaction)))
+  (^Token [^Transaction transaction]
+   (.getToken transaction)))
 
-(defn ignore-current-transaction []
-  (NewRelic/ignoreTransaction))
+(defn transaction-fn
+  "Instrument a function to produce a new function that will report to newrelic
+   as a transaction if there is no parent transaction and as a child trace if
+   there is already a parent transaction."
+  ([f]
+   (types/->TransactionFn
+     (fn [& args]
+       (try
+         (apply f args)
+         (catch Exception e
+           (NewRelic/noticeError ^Throwable e)
+           (throw e))))))
+  ([f category name]
+   (fn [& args]
+     (let [nested (in-transaction?)]
+       (apply
+         (types/->TransactionFn
+           (fn [& args]
+             (try
+               (if-not nested
+                 (set-transaction-name category name)
+                 (set-trace-name category name))
+               (apply f args)
+               (catch Exception e
+                 (NewRelic/noticeError ^Throwable e)
+                 (throw e)))))
+         args)))))
 
-(defn ignore-current-transaction-apdex []
-  (NewRelic/ignoreApdex))
+(defn async-transaction-fn
+  "Instrument a function to produce a new function that will report to newrelic
+   as a transaction if there is no parent transaction and as a child trace if
+   there is already a parent transaction."
+  ([f]
+   (types/->AsyncTransactionFn
+     (fn [& args]
+       (try
+         (apply f args)
+         (catch Exception e
+           (NewRelic/noticeError ^Throwable e)
+           (throw e))))))
+  ([f category name]
+   (fn [& args]
+     (let [nested (in-transaction?)]
+       (apply
+         (types/->AsyncTransactionFn
+           (fn [& args]
+             (try
+               (if-not nested
+                 (set-transaction-name category name)
+                 (set-trace-name category name))
+               (apply f args)
+               (catch Exception e
+                 (NewRelic/noticeError ^Throwable e)
+                 (throw e)))))
+         args)))))
 
-(defn defn-traced [& defnargs]
-  `(doto (defn ~@defnargs)
-     (alter-var-root (fn [old] (fn [& args] (trace (apply old args)))))))
+(defmacro with-transaction
+  "Runs body in a newrelic transaction if there is no parent transaction
+   or as a trace if there already is a parent transaction."
+  [& body]
+  `((transaction-fn (^{:once true} fn* [] ~@body))))
+
+(defmacro with-async-transaction
+  "Runs body in a newrelic async transaction if there is no parent transaction
+   or as a trace if there already is a parent transaction."
+  [& body]
+  `((async-transaction-fn (^{:once true} fn* [] ~@body))))
+
+(defmacro defn-traced
+  "Like defn, but for defining functions that will report as newrelic transactions
+   if there is no parent transaction, or as a trace if there already is a parent
+   transaction."
+  [& defnargs]
+  `(let [var# (defn ~@defnargs)]
+     (doto var# (alter-var-root transaction-fn "Clojure" (str (symbol var#))))))
 
 (defn wrap-transaction
-  "Middleware to start a newrelic transaction if one doesn't exist and to capture
-   basic information about the request."
+  "Ring middleware to establish a web transaction if one doesn't exist."
   [handler]
   (fn wrap-transaction-handler
     ([request]
-     (transaction
-       (let [req      (internals/adapt-ring-request request)
-             response (handler request)
-             res      (internals/adapt-ring-response response)]
-         (NewRelic/setRequestAndResponse req res)
-         response)))
+     (with-transaction
+       (.convertToWebTransaction (get-transaction))
+       (set-transaction-request request)
+       (doto (handler request)
+         (set-transaction-response))))
     ([request respond raise]
-     (transaction
-       (let [token (create-async-token)]
+     (with-transaction
+       (set-transaction-request request)
+       (let [token (get-async-token)]
          (handler request
                   (fn respond-callback [response]
-                    (async-transaction
+                    (with-async-transaction
                       (.linkAndExpire token)
-                      (let [req (internals/adapt-ring-request request)
-                            res (internals/adapt-ring-response response)]
-                        (NewRelic/setRequestAndResponse req res)
-                        (respond response))))
+                      (set-transaction-response response)
+                      (respond response)))
                   (fn raise-callback [^Throwable exception]
-                    (async-transaction
+                    (with-async-transaction
                       (.linkAndExpire token)
                       (NewRelic/noticeError exception)
                       (raise exception)))))))))
 
 
 (defn wrap-transaction-naming
-  "Middleware to assign a name to the current transaction based on the route
-   that is accessed. Template urls are used instead of the raw uri where possible
-   to improve transaction grouping. Template urls are detected for applications using
-   compojure or reitit and falls back to just using plain uri. The NewRelic agent applies
-   its own grouping of transactions under the hood and so even raw uris may be grouped."
+  "Middleware to assign a name to the current transaction based on the route that is accessed.
+   Template urls are used instead of the raw uri where possible to improve transaction grouping.
+   Template urls are detected for applications using compojure or reitit and falls back to just
+   using plain uri. The NewRelic agent applies its own grouping of transactions under the hood
+   and so even raw uris may be grouped."
   [handler]
   (fn wrap-transaction-naming-handler
     ([request]
-     (let [name (internals/extract-path-template request)]
-       (set-transaction-name "Uri" name)
+     (let [[category name] (internals/extract-path-template request)]
+       (set-transaction-name category name)
        (handler request)))
     ([request respond raise]
-     (let [name (internals/extract-path-template request)]
-       (set-transaction-name "Uri" name)
+     (let [[category name] (internals/extract-path-template request)]
+       (set-transaction-name category name)
        (handler request respond raise)))))
 
 

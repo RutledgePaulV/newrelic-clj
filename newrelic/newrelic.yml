@@ -4,7 +4,7 @@ common: &default_settings
   app_name: "newrelic-clj"
   high_security: false
   enable_auto_app_naming: false
-  enable_auto_transaction_naming: true
+  enable_auto_transaction_naming: false
   log_level: info
   audit_mode: false
   log_file_count: 1

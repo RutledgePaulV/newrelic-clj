@@ -4,10 +4,23 @@
             [ring.adapter.jetty :as jetty]))
 
 
-(defn hello [request]
+(defn-traced dogs [request]
+  (Thread/sleep 2000)
   {:status  200
    :headers {"Content-Type" "text/html"}
    :body    "<html><head></head><body>Hello!</body></html>"})
+
+(defn-traced bats [request]
+  (Thread/sleep 1000)
+  {:status  200
+   :headers {"Content-Type" "text/html"}
+   :body    "<html><head></head><body>Hello!</body></html>"})
+
+(defn-traced trot [request]
+  (throw (ex-info "Error" {})))
+
+(defn hello [request]
+  ((rand-nth [dogs bats trot]) request))
 
 (defn goodbye [request]
   {:status  200

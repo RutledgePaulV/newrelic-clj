@@ -149,12 +149,12 @@
       (and (contains? request :context)
            (string? (:context request))
            (contains? request :compojure/route))
-      (reverse-route-params (:uri request) (:route-params request))
+      ["NormalizedUri" (reverse-route-params (:uri request) (:route-params request))]
       (contains? request :compojure/route)
-      (some-> request :compojure/route (nth 1))
+      ["NormalizedUri" (some-> request :compojure/route (nth 1))]
       (contains? request :reitit.core/match)
-      (some-> request :reitit.core/match :template)
+      ["NormalizedUri" (some-> request :reitit.core/match :template)]
       :otherwise
-      (:uri request))
+      ["Uri" (:uri request)])
     (catch Exception e
-      (:uri request))))
+      ["Uri" (:uri request)])))

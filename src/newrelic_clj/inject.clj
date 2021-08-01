@@ -3,7 +3,7 @@
             [ring.core.protocols :as protos])
   (:import (com.github.rutledgepaulv.injectingstreams InjectingStreams)
            (java.io OutputStream InputStream ByteArrayInputStream)
-           (java.util.zip GZIPOutputStream GZIPInputStream DeflaterOutputStream DeflaterInputStream)))
+           (java.util.zip GZIPOutputStream GZIPInputStream DeflaterOutputStream InflaterInputStream)))
 
 (defn get-content-type [response]
   (or (get-in response [:headers "Content-Type"])
@@ -37,7 +37,7 @@
 (defn deflate [body]
   (cond
     (instance? InputStream body)
-    (DeflaterInputStream. body)
+    (InflaterInputStream. body)
     (bytes? body)
     (recur (ByteArrayInputStream. body))
     :otherwise
