@@ -2,9 +2,12 @@
   (:require [newrelic-clj.internals :as internals]
             [newrelic-clj.inject :as inject]
             [newrelic-clj.types :as types]
-            [clojure.string :as strings])
+            [clojure.string :as strings]
+            [clojure.walk :as walk])
   (:import (com.newrelic.api.agent NewRelic Transaction TransactionNamePriority TracedMethod Token TraceMetadata)
-           (org.slf4j MDC)))
+           (org.slf4j MDC)
+           (java.util HashMap TreeMap Map)
+           (java.util.concurrent ConcurrentHashMap)))
 
 
 (defn get-transaction
@@ -168,9 +171,11 @@
    a mdc context containing the data from the context map."
   [f context]
   (fn [& args]
-    (let [original (or (MDC/getCopyOfContextMap) {})]
+    (let [original  (MDC/getCopyOfContextMap)]
       (try
-        (MDC/setContextMap (merge context original))
+        (MDC/setContextMap
+          (doto (MDC/getCopyOfContextMap)
+            (.putAll (walk/stringify-keys context))))
         (apply f args)
         (finally
           (MDC/setContextMap original))))))
