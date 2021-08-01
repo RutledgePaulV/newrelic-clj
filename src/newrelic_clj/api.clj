@@ -171,14 +171,14 @@
    a mdc context containing the data from the context map."
   [f context]
   (fn [& args]
-    (let [original  (MDC/getCopyOfContextMap)]
+    (let [original (MDC/getCopyOfContextMap)]
       (try
         (MDC/setContextMap
           (doto (MDC/getCopyOfContextMap)
             (.putAll (walk/stringify-keys context))))
         (apply f args)
         (finally
-          (MDC/setContextMap original))))))
+          (MDC/setContextMap (or original (HashMap.))))))))
 
 (defmacro with-mdc-linking
   "Sets up a mdc context containing the attributes necessary for 'logs in context' before executing body."
