@@ -1,9 +1,10 @@
 (ns newrelic-clj.api
-  (:import (com.newrelic.api.agent NewRelic Transaction TransactionNamePriority TracedMethod Token))
   (:require [newrelic-clj.internals :as internals]
             [newrelic-clj.inject :as inject]
             [newrelic-clj.types :as types]
-            [clojure.string :as strings]))
+            [clojure.string :as strings])
+  (:import (com.newrelic.api.agent NewRelic Transaction TransactionNamePriority TracedMethod Token TraceMetadata)
+           (org.slf4j MDC)))
 
 
 (defn get-transaction
@@ -66,6 +67,11 @@
    (get-trace (get-transaction)))
   ([^Transaction transaction]
    (.getTracedMethod transaction)))
+
+(defn get-linking-context
+  "Returns a map of data necessary to include in logs"
+  []
+  (.getLinkingMetadata (NewRelic/getAgent)))
 
 (defn set-trace-name
   "Set a category and name for the current trace."
@@ -157,6 +163,23 @@
   [& body]
   `((async-transaction-fn (^{:once true} fn* [] ~@body))))
 
+(defn mdc-context-fn
+  "Returns an instrumented version of f which will first establish
+   a mdc context containing the data from the context map."
+  [f context]
+  (fn [& args]
+    (let [original (MDC/getCopyOfContextMap)]
+      (try
+        (MDC/setContextMap (merge context original))
+        (apply f args)
+        (finally
+          (MDC/setContextMap original))))))
+
+(defmacro with-mdc-linking
+  "Sets up a mdc context containing the attributes necessary for 'logs in context' before executing body."
+  [& body]
+  `(mdc-context-fn (^{:once true} fn* [] ~@body) (get-linking-context)))
+
 (defmacro defn-traced
   "Like defn, but for defining functions that will report as newrelic transactions
    if there is no parent transaction, or as a trace if there already is a parent
@@ -171,25 +194,29 @@
   (fn wrap-transaction-handler
     ([request]
      (with-transaction
-       (.convertToWebTransaction (get-transaction))
-       (set-transaction-request request)
-       (doto (handler request)
-         (set-transaction-response))))
+       (with-mdc-linking
+         (.convertToWebTransaction (get-transaction))
+         (set-transaction-request request)
+         (doto (handler request)
+           (set-transaction-response)))))
     ([request respond raise]
      (with-transaction
-       (set-transaction-request request)
-       (let [token (get-async-token)]
-         (handler request
-                  (fn respond-callback [response]
-                    (with-async-transaction
-                      (.linkAndExpire token)
-                      (set-transaction-response response)
-                      (respond response)))
-                  (fn raise-callback [^Throwable exception]
-                    (with-async-transaction
-                      (.linkAndExpire token)
-                      (NewRelic/noticeError exception)
-                      (raise exception)))))))))
+       (with-mdc-linking
+         (set-transaction-request request)
+         (let [token (get-async-token)]
+           (handler request
+                    (fn respond-callback [response]
+                      (with-async-transaction
+                        (.linkAndExpire token)
+                        (with-mdc-linking
+                          (set-transaction-response response)
+                          (respond response))))
+                    (fn raise-callback [^Throwable exception]
+                      (with-async-transaction
+                        (.linkAndExpire token)
+                        (with-mdc-linking
+                          (NewRelic/noticeError exception)
+                          (raise exception)))))))))))
 
 
 (defn wrap-transaction-naming
