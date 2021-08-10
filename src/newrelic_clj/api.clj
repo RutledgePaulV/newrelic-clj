@@ -276,7 +276,7 @@
             response (handler request)]
         (if (and (or (not (strings/blank? header))
                      (not (strings/blank? footer)))
-                 (inject/should-inject? response))
+                 (should-inject? response))
           (inject/perform-injection response header footer)
           response)))
      ([request respond raise]
@@ -287,7 +287,7 @@
                    (respond
                      (if (and (or (not (strings/blank? header))
                                   (not (strings/blank? footer)))
-                              (inject/should-inject? response))
+                              (should-inject? response))
                        (inject/perform-injection response header footer)
                        response)))
                  raise))))))
