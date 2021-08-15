@@ -77,9 +77,9 @@
   (let [injected-body
         (reify protos/StreamableResponseBody
           (write-body-to-stream [_ response output-stream]
-            (with-open [injected-stream (inject-output-stream output-stream header footer)
-                        zipped-stream   (GZIPOutputStream. injected-stream)]
-              (protos/write-body-to-stream (gunzip body) response zipped-stream))))]
+            (with-open [injected-stream   (inject-output-stream output-stream header footer)
+                        compressed-stream (GZIPOutputStream. injected-stream)]
+              (protos/write-body-to-stream (gunzip body) response compressed-stream))))]
     (-> response
         (update :headers dissoc "Content-Length" "content-length")
         (update :headers assoc "Content-Encoding" "gzip")
@@ -89,9 +89,9 @@
   (let [injected-body
         (reify protos/StreamableResponseBody
           (write-body-to-stream [_ response output-stream]
-            (with-open [injected-stream (inject-output-stream output-stream header footer)
-                        zipped-stream   (DeflaterOutputStream. injected-stream)]
-              (protos/write-body-to-stream (inflate body) response zipped-stream))))]
+            (with-open [injected-stream   (inject-output-stream output-stream header footer)
+                        compressed-stream (DeflaterOutputStream. injected-stream)]
+              (protos/write-body-to-stream (inflate body) response compressed-stream))))]
     (-> response
         (update :headers dissoc "Content-Length" "content-length")
         (update :headers assoc "Content-Encoding" "deflate")
