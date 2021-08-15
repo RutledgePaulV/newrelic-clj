@@ -230,6 +230,7 @@
          (set-transaction-response))))
     ([request respond raise]
      (with-transaction
+       (.convertToWebTransaction (get-transaction))
        (set-transaction-request request)
        (let [token (get-async-token)]
          (handler request
