@@ -34,7 +34,7 @@
     :otherwise
     (throw (ex-info (str "Don't know how to gunzip from " (class body)) {:body body}))))
 
-(defn deflate [body]
+(defn inflate [body]
   (cond
     (instance? InputStream body)
     (InflaterInputStream. body)
@@ -91,7 +91,7 @@
           (write-body-to-stream [_ response output-stream]
             (with-open [injected-stream (inject-output-stream output-stream header footer)
                         zipped-stream   (DeflaterOutputStream. injected-stream)]
-              (protos/write-body-to-stream (deflate body) response zipped-stream))))]
+              (protos/write-body-to-stream (inflate body) response zipped-stream))))]
     (-> response
         (update :headers dissoc "Content-Length" "content-length")
         (update :headers assoc "Content-Encoding" "deflate")
