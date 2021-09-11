@@ -63,7 +63,7 @@ execute after routing.
 
 (def wrapped
   (-> app
-      (route/wrap-routes nr/wrap-transaction-naming)
+      (cr/wrap-routes nr/wrap-transaction-naming)
       (nr/wrap-transaction)))
 
 (jetty/run-jetty #'wrapped {:port 3000 :join? false})
