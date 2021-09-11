@@ -11,7 +11,7 @@ A library to simplify usage of the Newrelic APM Java API from Clojure programs.
 ## Rationale
 
 NewRelic's APM agent instruments many Java libraries to capture observability data simply by running their JVM agent.
-Unfortunately, the APM agent is not particularly "Clojure Aware" and it relies on Java Annotations or XML pointcuts to 
+Unfortunately, the APM agent is not particularly "Clojure Friendly" as it relies on Java Annotations or XML pointcuts to 
 instrument custom code. This library seeks to bridge the gap and make working with NewRelic from Clojure easier and 
 more idiomatic.
 
