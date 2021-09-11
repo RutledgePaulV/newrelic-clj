@@ -19,7 +19,7 @@ more idiomatic.
 
 ## Usage
 
-You'll find examples below of how to use `newrelic-clj` to instrument your code.
+You'll find examples below of how to use `newrelic-clj` to instrument your code to improve the fidelity of your NewRelic integration. Everything seen here degrades gracefully when there is no NewRelic agent running. [Setting up the NewRelic agent](https://docs.newrelic.com/docs/agents/java-agent/installation/install-java-agent/) is an out-of-band concern.
 
 ### Creating web transactions
 
@@ -140,7 +140,8 @@ to the response stream. The performance overhead is very low (< 10μs).
 ### Creating function traces
 
 It's common to track timing / invocation counts for activity other than web requests. You may turn 
-any Clojure function into a unique transaction / span.
+any Clojure function into a unique transaction / span. You should only instrument functions whose
+typical duration outweighs any overhead concerns associated with the instrumentation.
 
 ```clojure
 
