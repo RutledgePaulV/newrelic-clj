@@ -41,7 +41,7 @@
     (bytes? body)
     (recur (ByteArrayInputStream. body))
     :otherwise
-    (throw (ex-info (str "Don't know how to deflate from " (class body)) {:body body}))))
+    (throw (ex-info (str "Don't know how to inflate from " (class body)) {:body body}))))
 
 (defn inject-output-stream [^OutputStream output-stream ^String header ^String footer]
   (cond-> output-stream
