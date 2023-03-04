@@ -1,19 +1,27 @@
 {:deps
  {com.github.rutledgepaulv/injecting-streams {:mvn/version "2.0"}
-  com.newrelic.agent.java/newrelic-api       {:mvn/version "7.1.1"}
-  ring/ring-core                             {:mvn/version "1.9.4"}
-  org.slf4j/slf4j-api                        {:mvn/version "1.7.32"}}
+  com.newrelic.agent.java/newrelic-api       {:mvn/version "8.0.1"}
+  ring/ring-core                             {:mvn/version "1.9.6"}
+  org.slf4j/slf4j-api                        {:mvn/version "2.0.6"}}
 
  :paths
  ["src"]
 
  :aliases
- {:test {:extra-paths ["test"]
-         :jvm-opts    ["-javaagent:./newrelic/newrelic.jar"]
-         :extra-deps  {ring/ring-jetty-adapter
-                       {:mvn/version "1.9.4"}
-                       io.github.cognitect-labs/test-runner
-                       {:git/url "https://github.com/cognitect-labs/test-runner.git"
-                        :sha     "4e7e1c0dfd5291fa2134df052443dc29695d8cbe"}}
-         :main-opts   ["-m" "cognitect.test-runner"]
-         :exec-fn     cognitect.test-runner.api/test}}}
+ {:build {:extra-deps  {io.github.clojure/tools.build
+                        {:git/url "https://github.com/clojure/tools.build.git"
+                         :sha     "75817f39b76375886a9014de3c4b5ab28e9456c8"}}
+          :extra-paths ["builds"]
+          :ns-default  build}
+
+  :test  {:extra-paths ["test"]
+          :jvm-opts    ["-javaagent:./newrelic/newrelic.jar"]
+          :extra-deps  {ring/ring-jetty-adapter
+                        {:mvn/version "1.9.6"}
+                        org.slf4j/slf4j-simple
+                        {:mvn/version "2.0.6"}
+                        io.github.cognitect-labs/test-runner
+                        {:git/url "https://github.com/cognitect-labs/test-runner.git"
+                         :sha     "7284cda41fb9edc0f3bc6b6185cfb7138fc8a023"}}
+          :main-opts   ["-m" "cognitect.test-runner"]
+          :exec-fn     cognitect.test-runner.api/test}}}

@@ -1,7 +1,7 @@
-(ns newrelic-clj.api
-  (:require [newrelic-clj.internals :as internals]
-            [newrelic-clj.inject :as inject]
-            [newrelic-clj.types :as types]
+(ns io.github.rutledgepaulv.newrelic-clj.api
+  (:require [io.github.rutledgepaulv.newrelic-clj.internals :as internals]
+            [io.github.rutledgepaulv.newrelic-clj.inject :as inject]
+            [io.github.rutledgepaulv.newrelic-clj.types :as types]
             [clojure.string :as strings]
             [clojure.walk :as walk])
   (:import (com.newrelic.api.agent NewRelic Transaction TransactionNamePriority TracedMethod Token)

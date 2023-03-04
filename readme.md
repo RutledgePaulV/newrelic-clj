@@ -17,6 +17,14 @@ more idiomatic.
 
 ---
 
+## Installation
+
+```clojure
+io.github.rutledgepaulv/newrelic-clj {:mvn/version "1.0.0"}
+```
+
+---
+
 ## Usage
 
 You'll find examples below of how to use `newrelic-clj` to instrument your code to improve the fidelity of your NewRelic integration. Everything seen here degrades gracefully when there is no NewRelic agent running. [Setting up the NewRelic agent](https://docs.newrelic.com/docs/agents/java-agent/installation/install-java-agent/) is an out-of-band concern.

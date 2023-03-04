@@ -1,4 +1,4 @@
-(ns newrelic-clj.inject
+(ns io.github.rutledgepaulv.newrelic-clj.inject
   (:require [clojure.string :as strings]
             [ring.core.protocols :as protos])
   (:import (com.github.rutledgepaulv.injectingstreams InjectingStreams)

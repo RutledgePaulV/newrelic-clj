@@ -1,4 +1,4 @@
-(ns newrelic-clj.types
+(ns io.github.rutledgepaulv.newrelic-clj.types
   (:import (clojure.lang IFn)
            (com.newrelic.api.agent Trace)))
 

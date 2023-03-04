@@ -1,4 +1,4 @@
-(ns newrelic-clj.internals
+(ns io.github.rutledgepaulv.newrelic-clj.internals
   (:require [clojure.string :as strings])
   (:import (com.newrelic.api.agent ExtendedRequest ExtendedResponse HeaderType)
            (java.util.regex Matcher Pattern)))

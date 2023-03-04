@@ -1,6 +1,6 @@
-(ns newrelic-clj.api-test
+(ns io.github.rutledgepaulv.newrelic-clj.api-test
   (:require [clojure.test :refer :all]
-            [newrelic-clj.api :refer :all]
+            [io.github.rutledgepaulv.newrelic-clj.api :refer :all]
             [ring.adapter.jetty :as jetty]))
 
 

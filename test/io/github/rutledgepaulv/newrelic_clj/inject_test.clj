@@ -1,6 +1,6 @@
-(ns newrelic-clj.inject-test
+(ns io.github.rutledgepaulv.newrelic-clj.inject-test
   (:require [clojure.test :refer :all]
-            [newrelic-clj.inject :refer :all]
+            [io.github.rutledgepaulv.newrelic-clj.inject :refer :all]
             [ring.core.protocols :as protos])
   (:import (java.io ByteArrayOutputStream)))
 
