@@ -1,3 +1,4 @@
+[![Clojars Project](https://img.shields.io/clojars/v/io.github.rutledgepaulv/newrelic-clj.svg)](https://clojars.org/io.github.rutledge)
 
 <img src="./docs/logo.png" title="newrelic-clj" width="300" height="300" align="left" padding="5px"/>
 <small>
@@ -36,7 +37,7 @@ about the request. This middleware should be placed on the absolute exterior of 
 
 ```clojure
 
-(require '[newrelic-clj.api :as nr])
+(require '[io.github.rutledgepaulv.newrelic-clj.api :as nr])
 (require '[ring.adapter.jetty :as jetty])
 
 (defn handler [request]
@@ -59,7 +60,7 @@ execute after routing.
 
 ```clojure
 
-(require '[newrelic-clj.api :as nr])
+(require '[io.github.rutledgepaulv.newrelic-clj.api :as nr])
 (require '[ring.adapter.jetty :as jetty])
 (require '[compojure.core :as cr])
 
@@ -87,7 +88,7 @@ middleware on every endpoint (after routing).
 
 ```clojure
 
-(require '[newrelic-clj.api :as nr])
+(require '[io.github.rutledgepaulv.newrelic-clj.api :as nr])
 (require '[ring.adapter.jetty :as jetty])
 (require '[reitit.ring :as rr])
 
@@ -121,13 +122,13 @@ middleware on every endpoint (after routing).
 
 ### Injecting Client Side Real User Monitoring (RUM)
 
-You can use `newrelic-clj.api/wrap-rum-injection` middleware to add NewRelic script tags to all html page responses. Injection 
+You can use `io.github.rutledgepaulv.newrelic-clj.api/wrap-rum-injection` middleware to add NewRelic script tags to all html page responses. Injection 
 is performed by [injecting-streams](https://github.com/RutledgePaulV/injecting-streams) and takes place as bytes are written 
 to the response stream. The performance overhead is very low (< 10μs).
 
 ```clojure
 
-(require '[newrelic-clj.api :as nr])
+(require '[io.github.rutledgepaulv.newrelic-clj.api :as nr])
 (require '[ring.adapter.jetty :as jetty])
 
 (defn handler [request]
@@ -153,7 +154,7 @@ typical duration outweighs any overhead concerns associated with the instrumenta
 
 ```clojure
 
-(require '[newrelic-clj.api :as nr])
+(require '[io.github.rutledgepaulv.newrelic-clj.api :as nr])
 
 (defn my-sum [coll]
   (reduce + 0 coll))
@@ -178,7 +179,7 @@ You can report an error against a running transaction so that it's surfaced in N
 
 ```clojure
 
-(require '[newrelic-clj.api :as nr])
+(require '[io.github.rutledgepaulv.newrelic-clj.api :as nr])
 
 (try
   (do-dangerous-thing)
