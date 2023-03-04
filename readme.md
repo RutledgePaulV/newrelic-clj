@@ -54,7 +54,7 @@ about the request. This middleware should be placed on the absolute exterior of 
 ### Naming Web Transactions (Compojure)
 
 Compojure injects match data into requests before they reach any of your handlers. To achieve nice transaction
-names you want to send requests through `newrelic-clj.api/wrap-transaction-naming` immediately after routing has 
+names you want to send requests through `io.github.rutledgepaulv.newrelic-clj.api/wrap-transaction-naming` immediately after routing has 
 occurred. The easiest way to do that is to use `compojure.core/wrap-routes` middleware to enqueue middleware to 
 execute after routing.
 
@@ -82,7 +82,7 @@ execute after routing.
 ### Naming Web Transactions (Reitit)
 
 Reitit injects match data into requests before they reach any of your handlers. To achieve nice transaction
-names you want to send requests through `newrelic-clj.api/wrap-transaction-naming` on every route. The easiest
+names you want to send requests through `io.github.rutledgepaulv.newrelic-clj.api/wrap-transaction-naming` on every route. The easiest
 way to do that is to use the `:reitit.middleware/transform` option when compiling a router to inject this 
 middleware on every endpoint (after routing).
 
