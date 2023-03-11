@@ -21,7 +21,7 @@ more idiomatic.
 ## Installation
 
 ```clojure
-io.github.rutledgepaulv/newrelic-clj {:mvn/version "1.0.1"}
+io.github.rutledgepaulv/newrelic-clj {:mvn/version "1.0.2"}
 ```
 
 ---
