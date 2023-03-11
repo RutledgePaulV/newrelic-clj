@@ -3,12 +3,14 @@
   (:import (com.newrelic.api.agent ExtendedRequest ExtendedResponse HeaderType)
            (java.util.regex Matcher Pattern)))
 
+(set! *warn-on-reflection* true)
+
 (defprotocol ContentLength
   (byte-length [x]))
 
 (extend-protocol ContentLength
   (Class/forName "[B")
-  (byte-length [x] (alength x))
+  (byte-length [x] (alength ^bytes x))
   nil
   (byte-length [x] 0)
   Object
