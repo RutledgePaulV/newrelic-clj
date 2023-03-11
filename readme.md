@@ -1,4 +1,4 @@
-[![Clojars Project](https://img.shields.io/clojars/v/io.github.rutledgepaulv/newrelic-clj.svg)](https://clojars.org/io.github.rutledge)
+[![Clojars Project](https://img.shields.io/clojars/v/io.github.rutledgepaulv/newrelic-clj.svg)](https://clojars.org/io.github.rutledgepaulv/newrelic-clj)
 
 <img src="./docs/logo.png" title="newrelic-clj" width="300" height="300" align="left" padding="5px"/>
 <small>
