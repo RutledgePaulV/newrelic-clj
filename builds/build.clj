@@ -2,7 +2,7 @@
   (:require [clojure.tools.build.api :as b]))
 
 (def lib 'io.github.rutledgepaulv/newrelic-clj)
-(def version "1.0.1")
+(def version "1.0.2")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/newrelic-clj.jar" (name lib) version))

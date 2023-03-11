@@ -8,10 +8,11 @@
            (org.slf4j MDC)
            (java.util HashMap Map)))
 
+(set! *warn-on-reflection* true)
 
 (defn get-transaction
   "Get the current transaction."
-  []
+  ^Transaction []
   (.getTransaction (NewRelic/getAgent)))
 
 (defn in-transaction?
@@ -125,10 +126,10 @@
     (fn [& args]
       (let [original (MDC/getCopyOfContextMap)]
         (try
-          (MDC/setContextMap
-            (doto (or (MDC/getCopyOfContextMap) (HashMap.))
-              (.putAll (walk/stringify-keys context))))
-          (apply f args)
+          (let [modifiable (or (MDC/getCopyOfContextMap) (HashMap.))]
+            (.putAll ^Map modifiable (walk/stringify-keys context))
+            (MDC/setContextMap modifiable)
+            (apply f args))
           (finally
             (MDC/setContextMap (or original (HashMap.)))))))
     f))

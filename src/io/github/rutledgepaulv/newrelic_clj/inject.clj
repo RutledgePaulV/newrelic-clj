@@ -5,6 +5,8 @@
            (java.io OutputStream InputStream ByteArrayInputStream)
            (java.util.zip GZIPOutputStream GZIPInputStream DeflaterOutputStream InflaterInputStream)))
 
+(set! *warn-on-reflection* true)
+
 (defn get-content-type [response]
   (or (get-in response [:headers "Content-Type"])
       (get-in response [:headers "content-type"])
@@ -43,7 +45,7 @@
     :otherwise
     (throw (ex-info (str "Don't know how to inflate from " (class body)) {:body body}))))
 
-(defn inject-output-stream [^OutputStream output-stream ^String header ^String footer]
+(defn inject-output-stream ^OutputStream [^OutputStream output-stream ^String header ^String footer]
   (cond-> output-stream
     (not (strings/blank? header))
     (InjectingStreams/injectAfterOutput "<head>" header)

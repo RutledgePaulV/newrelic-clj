@@ -2,7 +2,7 @@
   (:import (clojure.lang IFn)
            (com.newrelic.api.agent Trace)))
 
-
+(set! *warn-on-reflection* true)
 
 (deftype TransactionFn [f]
   IFn
