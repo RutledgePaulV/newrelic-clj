@@ -71,7 +71,9 @@
     (getHeader [name]
       (get-in ring-request [:headers name]))
     (getMethod []
-      (some-> ring-request :request-method name strings/upper-case))))
+      (some-> ring-request :request-method name strings/upper-case))
+    (getRequestURI []
+      (:uri ring-request))))
 
 (defn adapt-ring-response [ring-response]
   (proxy [ExtendedResponse] []
