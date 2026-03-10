@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
+set -e
 
 clj -X:build clean
 clj -X:build jar
 version=$(clj -X:build get-version)
+export OP_ACCOUNT="my.1password.com"
 
-export CLOJARS_USERNAME="op://Personal/clojars.org/username"
-export CLOJARS_PASSWORD="op://Personal/clojars.org/token"
-
-op run -- mvn deploy:deploy-file \
+op run --env-file="./.env" -- mvn deploy:deploy-file \
   -DgroupId="io.github.rutledgepaulv" \
   -DartifactId="newrelic-clj" \
   -Dversion="$version" \

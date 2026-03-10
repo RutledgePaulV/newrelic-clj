@@ -21,6 +21,10 @@
                 :src-dirs  ["src"]
                 :scm       {:tag        (str "v" version)
                             :connection (str "scm:git:git@github.com:rutledgepaulv/" (name lib) ".git")
-                            :url        (str "https://github.com/rutledgepaulv/" (name lib))}})
+                            :url        (str "https://github.com/rutledgepaulv/" (name lib))}
+                :pom-data  [[:licenses
+                             [:license
+                              [:name "MIT License"]
+                              [:url "https://opensource.org/licenses/MIT"]]]]})
   (b/copy-dir {:src-dirs ["src"] :target-dir class-dir})
   (b/jar {:class-dir class-dir :jar-file jar-file}))
