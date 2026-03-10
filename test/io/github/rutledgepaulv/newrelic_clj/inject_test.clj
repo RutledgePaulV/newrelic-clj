@@ -13,10 +13,9 @@
 
 (deftest content-injection
   (let [header            "<script>console.log('header');</script>"
-        footer            "<script>console.log('footer');</script>"
         original          "<html><head></head><body></body></html>"
         response          {:headers {"Content-Type" "text/html"} :body original}
-        injected-response (perform-injection response header footer)]
+        injected-response (perform-injection response header)]
     (is (satisfies? protos/StreamableResponseBody (:body injected-response)))
-    (is (= (format "<html><head>%s</head><body>%s</body></html>" header footer)
+    (is (= (format "<html><head>%s</head><body></body></html>" header)
            (response-body->string injected-response)))))

@@ -45,29 +45,27 @@
     :otherwise
     (throw (ex-info (str "Don't know how to inflate from " (class body)) {:body body}))))
 
-(defn inject-output-stream ^OutputStream [^OutputStream output-stream ^String header ^String footer]
+(defn inject-output-stream ^OutputStream [^OutputStream output-stream ^String header]
   (cond-> output-stream
     (not (strings/blank? header))
-    (InjectingStreams/injectAfterOutput "<head>" header)
-    (not (strings/blank? footer))
-    (InjectingStreams/injectBeforeOutput "</body>" footer)))
+    (InjectingStreams/injectAfterOutput "<head>" header)))
 
-(defn dispatch [response _ _]
+(defn dispatch [response _]
   (->> (strings/split (get-content-encoding response) #"\s*,\s*")
        (filterv (complement strings/blank?))))
 
 (defmulti perform-injection #'dispatch)
 
 ; default to no injection if content-encoding unsupported
-(defmethod perform-injection :default [response _ _]
+(defmethod perform-injection :default [response _]
   response)
 
-(defmethod perform-injection [] [{:keys [body] :as response} ^String header ^String footer]
+(defmethod perform-injection [] [{:keys [body] :as response} ^String header]
   (let [current-length (get-content-length response)
-        extra-length   (+ (alength (.getBytes header)) (alength (.getBytes footer)))
+        extra-length   (alength (.getBytes header))
         injected-body  (reify protos/StreamableResponseBody
                          (write-body-to-stream [_ response output-stream]
-                           (with-open [injected-stream (inject-output-stream output-stream header footer)]
+                           (with-open [injected-stream (inject-output-stream output-stream header)]
                              (protos/write-body-to-stream body response injected-stream))))]
     (cond-> response
       (some? current-length)
@@ -75,32 +73,30 @@
       :always
       (assoc :body injected-body))))
 
-(defmethod perform-injection ["gzip"] [{:keys [body] :as response} ^String header ^String footer]
+(defmethod perform-injection ["gzip"] [{:keys [body] :as response} ^String header]
   (let [injected-body
         (reify protos/StreamableResponseBody
           (write-body-to-stream [_ response output-stream]
             (with-open [compressed-stream
                         (-> output-stream
                             (GZIPOutputStream.)
-                            (inject-output-stream header footer))]
+                            (inject-output-stream header))]
               (protos/write-body-to-stream (gunzip body) response compressed-stream))))]
     (-> response
         (update :headers dissoc "Content-Length" "content-length")
         (update :headers assoc "Content-Encoding" "gzip")
         (assoc :body injected-body))))
 
-(defmethod perform-injection ["deflate"] [{:keys [body] :as response} ^String header ^String footer]
+(defmethod perform-injection ["deflate"] [{:keys [body] :as response} ^String header]
   (let [injected-body
         (reify protos/StreamableResponseBody
           (write-body-to-stream [_ response output-stream]
             (with-open [compressed-stream
                         (-> output-stream
                             (DeflaterOutputStream.)
-                            (inject-output-stream header footer))]
+                            (inject-output-stream header))]
               (protos/write-body-to-stream (inflate body) response compressed-stream))))]
     (-> response
         (update :headers dissoc "Content-Length" "content-length")
         (update :headers assoc "Content-Encoding" "deflate")
         (assoc :body injected-body))))
-
-

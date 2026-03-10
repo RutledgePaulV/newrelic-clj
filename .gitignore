@@ -4,3 +4,7 @@
 target/
 .nrepl-port
 *.log
+.calva/mcp-server/port
+.clj-kondo/.cache/
+.lsp/.cache/
+.portal/vs-code.edn

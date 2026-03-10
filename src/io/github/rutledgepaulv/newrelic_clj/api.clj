@@ -274,22 +274,18 @@
    (fn wrap-rum-injection-handler
      ([request]
       (let [header   (NewRelic/getBrowserTimingHeader)
-            footer   (NewRelic/getBrowserTimingFooter)
             response (handler request)]
-        (if (and (or (not (strings/blank? header))
-                     (not (strings/blank? footer)))
+        (if (and (not (strings/blank? header))
                  (should-inject? response))
-          (inject/perform-injection response header footer)
+          (inject/perform-injection response header)
           response)))
      ([request respond raise]
-      (let [header (NewRelic/getBrowserTimingHeader)
-            footer (NewRelic/getBrowserTimingFooter)]
+      (let [header (NewRelic/getBrowserTimingHeader)]
         (handler request
                  (fn [response]
                    (respond
-                     (if (and (or (not (strings/blank? header))
-                                  (not (strings/blank? footer)))
+                     (if (and (not (strings/blank? header))
                               (should-inject? response))
-                       (inject/perform-injection response header footer)
+                       (inject/perform-injection response header)
                        response)))
                  raise))))))
